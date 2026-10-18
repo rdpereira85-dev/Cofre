@@ -142,7 +142,7 @@ svg text{fill:var(--muted);font-family:var(--f-num);font-size:10px}
 .goalgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .fixedrow{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid var(--line)}
 .fixedrow:first-child{border-top:0}
-.addfixed{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto;gap:8px}
+.addfixed{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) auto;gap:8px}
 textarea.inp{min-height:110px;font-family:var(--f-num);font-size:13px}
 
 /* Abas */
@@ -152,6 +152,24 @@ nav.tabs button{appearance:none;border:0;background:none;padding:8px 0 10px;disp
 nav.tabs button svg{width:22px;height:22px}
 nav.tabs button[aria-current="page"]{color:var(--accent);font-weight:600}
 nav.tabs .plus span.ic{width:40px;height:30px;border-radius:10px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center}
+
+/* Seletor segmentado (tipo de lançamento, tema) */
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
+.seg input{position:absolute;opacity:0;pointer-events:none}
+.seg label{text-align:center;padding:9px 6px;border-radius:9px;cursor:pointer;font-weight:500;font-size:14px;color:var(--muted)}
+.seg input:checked+label{background:var(--accent);color:var(--accent-ink)}
+.seg input:focus-visible+label{outline:2px solid var(--accent);outline-offset:1px}
+.seg.income input:checked+label.inc{background:var(--good);color:var(--accent-ink)}
+
+/* Renda x custo */
+.incgrid{display:grid;gap:8px;margin-top:4px}
+.incrow{display:flex;justify-content:space-between;gap:12px;font-size:14px}
+.incrow span:last-child{font-family:var(--f-num)}
+.incrow.total{padding-top:8px;border-top:1px solid var(--line);font-weight:600}
+.pos{color:var(--good)}.neg{color:var(--bad)}
+.tag{display:inline-block;font-size:11px;font-weight:600;letter-spacing:.03em;padding:1px 7px;border-radius:6px;border:1px solid var(--line);color:var(--muted);margin-left:6px;vertical-align:1px}
+.item .plus{color:var(--good)}
+.addfixed .wide{grid-column:1/-1}
 
 #toast{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;opacity:0;pointer-events:none;transition:.25s;z-index:40;max-width:calc(100% - 32px)}
 #toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
@@ -197,6 +215,10 @@ nav.tabs .plus span.ic{width:40px;height:30px;border-radius:10px;background:var(
         </div>
       </div>
       <div class="sect">
+        <h3>Renda × custo do mês</h3>
+        <div class="card" id="inc"></div>
+      </div>
+      <div class="sect">
         <h3>Acumulado no mês</h3>
         <div class="card" style="padding:12px 8px 10px"><div id="chart"></div>
           <div class="legend" style="padding:6px 8px 0"><span><i></i>Real</span><span><i class="d"></i>Projeção</span><span id="lgGoal"><i class="g d"></i>Limite mensal</span></div>
@@ -214,24 +236,40 @@ nav.tabs .plus span.ic{width:40px;height:30px;border-radius:10px;background:var(
         <h3>Por categoria neste mês</h3>
         <div class="card cats" id="cats"></div>
       </div>
+      <div class="sect">
+        <h3>Por meio de pagamento</h3>
+        <div class="card cats" id="pays"></div>
+      </div>
     </div>
 
     <!-- LANÇAR -->
     <form class="view" id="v-add" hidden autocomplete="off">
+      <div class="seg income" role="radiogroup" aria-label="Tipo de lançamento">
+        <input type="radio" name="kind" id="kExp" value="exp" checked><label for="kExp">Gasto</label>
+        <input type="radio" name="kind" id="kInc" value="inc"><label for="kInc" class="inc">Renda extra</label>
+      </div>
       <div class="field"><label for="aVal">Valor</label>
         <div class="amount"><span>R$</span><input id="aVal" inputmode="decimal" placeholder="0,00" aria-label="Valor em reais"></div></div>
-      <div class="field"><span class="lbl">Categoria</span><div class="chips" id="aCats"></div></div>
+      <div class="field" id="aCatWrap"><span class="lbl">Categoria</span><div class="chips" id="aCats"></div></div>
+      <div class="field" id="aPayWrap"><span class="lbl">Meio de pagamento</span><div class="chips" id="aPays"></div></div>
       <div class="row2">
         <div class="field"><label for="aDate">Data</label><input class="inp" id="aDate" type="date"></div>
         <div class="field"><label for="aDesc">Descrição</label><input class="inp" id="aDesc" placeholder="Opcional" maxlength="60"></div>
       </div>
       <p class="err" id="aErr" role="alert"></p>
-      <button class="btn" type="submit">Salvar gasto</button>
+      <button class="btn" type="submit" id="aSubmit">Salvar gasto</button>
       <p class="muted small" id="aHint" style="margin:0"></p>
     </form>
 
     <!-- METAS -->
     <div class="view" id="v-goals" hidden>
+      <form class="sect" id="incForm" autocomplete="off">
+        <h3>Renda</h3>
+        <p class="muted small" style="margin:0">Valor que entra todo mês (salário, pró-labore). Rendas extras você lança na aba Lançar e elas se somam a este valor no mês em que entraram.</p>
+        <div class="field"><label for="iM">Renda mensal</label><input class="inp num" id="iM" inputmode="decimal" placeholder="R$"></div>
+        <p class="muted small" id="iExtra" style="margin:0"></p>
+        <button class="btn" type="submit">Salvar renda</button>
+      </form>
       <form class="sect" id="goalForm">
         <h3>Limites de gasto</h3>
         <p class="muted small" style="margin:0">Diário e semanal contam os gastos do dia a dia. Mensal e anual somam também os custos fixos. Deixe em branco para não usar.</p>
@@ -248,8 +286,9 @@ nav.tabs .plus span.ic{width:40px;height:30px;border-radius:10px;background:var(
         <p class="muted small" style="margin:0">Aluguel, internet, assinaturas. Eles entram na projeção todo mês, então não precisam ser lançados como gasto.</p>
         <div class="card" id="fixedList"></div>
         <form class="addfixed" id="fixedForm" autocomplete="off">
-          <input class="inp" id="fxName" placeholder="Nome" aria-label="Nome do custo fixo" maxlength="40">
+          <input class="inp wide" id="fxName" placeholder="Nome (ex.: Aluguel)" aria-label="Nome do custo fixo" maxlength="40">
           <input class="inp num" id="fxVal" placeholder="R$" inputmode="decimal" aria-label="Valor mensal">
+          <select class="inp" id="fxPay" aria-label="Meio de pagamento"><option value="">Pagamento</option><option value="pix">Pix</option><option value="credito">Crédito</option><option value="debito">Débito</option></select>
           <button class="btn sm" type="submit">Adicionar</button>
         </form>
       </div>
@@ -270,6 +309,15 @@ nav.tabs .plus span.ic{width:40px;height:30px;border-radius:10px;background:var(
       <div class="sect" id="installCard">
         <h3>Instalar no iPhone</h3>
         <div class="card small">Abra o endereço do app no <b>Safari</b>, toque em <b>Compartilhar</b> e depois em <b>Adicionar à Tela de Início</b>. Ele abre em tela cheia e funciona sem internet.</div>
+      </div>
+      <div class="sect">
+        <h3>Aparência</h3>
+        <div class="seg" role="radiogroup" aria-label="Tema">
+          <input type="radio" name="theme" id="tAuto" value="auto"><label for="tAuto">Automático</label>
+          <input type="radio" name="theme" id="tLight" value="light"><label for="tLight">Claro</label>
+          <input type="radio" name="theme" id="tDark" value="dark"><label for="tDark">Escuro</label>
+        </div>
+        <p class="muted small" style="margin:0">Automático segue o modo claro ou escuro do iPhone.</p>
       </div>
       <form class="sect" id="pwForm" autocomplete="off">
         <h3>Trocar senha</h3>
@@ -312,6 +360,21 @@ const $=s=>document.querySelector(s);
 const VAULT='cofre.vault.v1';
 const CATS=[['mercado','Mercado'],['comida','Comida fora'],['transporte','Transporte'],['casa','Casa'],['saude','Saúde'],['lazer','Lazer'],['compras','Compras'],['outros','Outros']];
 const catName=k=>(CATS.find(c=>c[0]===k)||[k,k])[1];
+const PAYS=[['pix','Pix'],['credito','Crédito'],['debito','Débito']];
+const payName=k=>(PAYS.find(p=>p[0]===k)||['','Não informado'])[1];
+
+/* tema: fica fora do cofre para valer também na tela de senha */
+const THEME='cofre.theme';
+function getTheme(){try{return localStorage.getItem(THEME)||'auto'}catch(e){return 'auto'}}
+function applyTheme(t){
+  const r=document.documentElement;
+  if(t==='light'||t==='dark')r.setAttribute('data-theme',t);else r.removeAttribute('data-theme');
+}
+applyTheme(getTheme());
+document.querySelectorAll('input[name=theme]').forEach(i=>i.addEventListener('change',()=>{
+  try{localStorage.setItem(THEME,i.value)}catch(e){}
+  applyTheme(i.value);
+}));
 const MESES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
 const fmt=c=>(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const fmt0=c=>(c/100).toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0});
@@ -344,7 +407,7 @@ async function save(){
   try{localStorage.setItem(VAULT,JSON.stringify({v:1,salt:b64(SALT),iv:b64(iv),ct:b64(ct)}));return true}
   catch(e){toast('Não foi possível salvar neste aparelho');return false}
 }
-const blank=()=>({expenses:[],fixed:[],goals:{daily:0,weekly:0,monthly:0,yearly:0}});
+const blank=()=>({expenses:[],fixed:[],goals:{daily:0,weekly:0,monthly:0,yearly:0},income:{monthly:0},extras:[]});
 
 /* ---------- tela de senha ---------- */
 let creating=false;
@@ -417,7 +480,9 @@ function stats(){
   const yS=`${y}-01-01`, doy=Math.round((new Date(y,m,day)-new Date(y,0,1))/864e5)+1, diy=(y%4===0&&y%100!==0)||y%400===0?366:365;
   const varYear=sum(yS,`${y}-12-31`);
   const yearSoFar=varYear+fx*(m+1), projYear=fx*12+Math.round(varYear/doy*diy);
-  return {y,m,day,n,today,mS,mE,ws,we,fx,varMonth,varToday,varWeek,proj,varYear,yearSoFar,projYear};
+  const extraMonth=S.extras.reduce((t,x)=>x.d>=mS&&x.d<=mE?t+x.a:t,0);
+  const income=(S.income.monthly||0)+extraMonth;
+  return {y,m,day,n,today,mS,mE,ws,we,fx,varMonth,varToday,varWeek,proj,varYear,yearSoFar,projYear,extraMonth,income};
 }
 function costOfLiving(st){
   const vals=[];
@@ -436,7 +501,10 @@ function render(){
   if(current==='list')renderList();
   if(current==='goals')renderGoals();
   if(current==='add')renderAdd();
-  if(current==='set')$('#installCard').hidden=!!(navigator.standalone||matchMedia('(display-mode: standalone)').matches);
+  if(current==='set'){
+    $('#installCard').hidden=!!(navigator.standalone||matchMedia('(display-mode: standalone)').matches);
+    const t=getTheme();$({auto:'#tAuto',light:'#tLight',dark:'#tDark'}[t]||'#tAuto').checked=true;
+  }
 }
 function level(p){return p>=1?'bad':p>=.8?'warn':''}
 function renderHome(){
@@ -451,6 +519,33 @@ function renderHome(){
   else{const d=st.proj-g.monthly,l=level(st.proj/g.monthly);
     pill.className='pill '+(l||'ok');
     pill.textContent=d>0?`Acima do limite em ${fmt0(d)}`:`Dentro do limite · sobram ${fmt0(-d)}`;}
+  /* renda x custo */
+  if(!st.income){
+    $('#inc').innerHTML=`<div class="empty" style="padding:12px">Cadastre sua renda para ver quanto sobra no fim do mês.<button class="btn sm" data-goto="goals" type="button">Cadastrar renda</button></div>`;
+  }else{
+    const bal=st.income-st.proj,p=st.proj/st.income,l=bal<0?'bad':p>=.9?'warn':'ok';
+    $('#inc').innerHTML=`<div class="hero"><span class="lbl">Saldo previsto</span>
+      <div class="big ${bal<0?'neg':'pos'}" style="font-size:32px">${bal<0?'−':''}${fmt0(Math.abs(bal))}</div>
+      <span class="pill ${l}">${bal<0?'Custo maior que a renda':'Custo usa '+Math.round(p*100)+'% da renda'}</span></div>
+      <div class="track" style="margin-top:12px"><div class="fill ${level(p)}" style="width:${Math.min(100,p*100)}%"></div></div>
+      <div class="incgrid" style="margin-top:12px">
+        <div class="incrow"><span>Renda mensal</span><span>${fmt(S.income.monthly||0)}</span></div>
+        <div class="incrow"><span>Renda extra no mês</span><span>${fmt(st.extraMonth)}</span></div>
+        <div class="incrow total"><span>Renda total</span><span>${fmt(st.income)}</span></div>
+        <div class="incrow"><span>Custo projetado</span><span>− ${fmt(st.proj)}</span></div>
+        <div class="incrow"><span>Gasto até hoje (com fixos)</span><span>− ${fmt(st.fx+st.varMonth)}</span></div>
+      </div>`;
+  }
+  $('#inc').querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
+
+  /* por meio de pagamento (gastos do mês + custos fixos) */
+  const bp={};
+  for(const e of S.expenses)if(e.d>=st.mS&&e.d<=st.mE)bp[e.p||'']=(bp[e.p||'']||0)+e.a;
+  for(const f of S.fixed)bp[f.p||'']=(bp[f.p||'']||0)+f.v;
+  const pl=Object.entries(bp).sort((a,b)=>b[1]-a[1]),pmax=pl.length?pl[0][1]:1,ptot=pl.reduce((t,x)=>t+x[1],0)||1;
+  $('#pays').innerHTML=pl.length?pl.map(([k,v])=>`<div class="catrow"><span>${payName(k)} <span class="muted small">${Math.round(v/ptot*100)}%</span></span><span class="num small">${fmt(v)}</span><div class="track"><div class="fill" style="width:${v/pmax*100}%"></div></div></div>`).join('')+`<span class="muted small">Inclui os custos fixos do mês.</span>`
+    :`<span class="muted small">Nenhum gasto neste mês ainda.</span>`;
+
   $('#chart').innerHTML=chartSVG(st);
   $('#lgGoal').hidden=!g.monthly;
 
@@ -483,7 +578,7 @@ function renderHome(){
 }
 function niceMax(v){if(v<=0)return 100000;const r=v/100,p=Math.pow(10,Math.floor(Math.log10(r))),f=r/p;const n=f<=1?1:f<=2?2:f<=2.5?2.5:f<=5?5:10;return n*p*100}
 function chartSVG(st){
-  const W=340,H=180,L=50,R=12,T=10,B=24,iw=W-L-R,ih=H-T-B;
+  const W=340,H=180,L=60,R=12,T=10,B=24,iw=W-L-R,ih=H-T-B;
   const byDay=new Array(st.n+1).fill(0);
   for(const e of S.expenses)if(e.d>=st.mS&&e.d<=st.mE){const d=+e.d.slice(8);if(d<=st.day)byDay[d]+=e.a}
   const cum=[];let c=st.fx;for(let d=1;d<=st.day;d++){c+=byDay[d];cum.push(c)}
@@ -507,17 +602,33 @@ function renderAdd(){
   if(!$('#aCats').children.length){
     $('#aCats').innerHTML=CATS.map(([k,n],i)=>`<input type="radio" name="cat" id="c_${k}" value="${k}" ${i===0?'checked':''}><label for="c_${k}">${n}</label>`).join('');
   }
+  if(!$('#aPays').children.length){
+    $('#aPays').innerHTML=PAYS.map(([k,n],i)=>`<input type="radio" name="pay" id="p_${k}" value="${k}" ${i===0?'checked':''}><label for="p_${k}">${n}</label>`).join('');
+  }
   if(!$('#aDate').value)$('#aDate').value=iso(new Date());
+  const inc=$('#kInc').checked;
+  $('#aCatWrap').hidden=inc;$('#aPayWrap').hidden=inc;
+  $('#aSubmit').textContent=inc?'Salvar renda extra':'Salvar gasto';
+  $('#aDesc').placeholder=inc?'Ex.: freela, venda':'Opcional';
   const st=stats(),g=S.goals;
-  $('#aHint').textContent=g.daily?`Hoje: ${fmt(st.varToday)} de ${fmt0(g.daily)} do limite diário.`:'';
+  $('#aHint').textContent=inc?`Renda extra em ${MESES[st.m]}: ${fmt(st.extraMonth)}. Ela se soma à renda mensal.`
+    :g.daily?`Hoje: ${fmt(st.varToday)} de ${fmt0(g.daily)} do limite diário.`:'';
 }
+document.querySelectorAll('input[name=kind]').forEach(i=>i.addEventListener('change',()=>{$('#aErr').textContent='';renderAdd()}));
 $('#v-add').addEventListener('submit',async e=>{
   e.preventDefault();
   const a=parseMoney($('#aVal').value),err=$('#aErr');
   if(!a){err.textContent='Digite um valor maior que zero, por exemplo 45,90.';return}
   const d=$('#aDate').value||iso(new Date());
   err.textContent='';
-  S.expenses.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),a,c:document.querySelector('input[name=cat]:checked').value,d,n:$('#aDesc').value.trim()});
+  const id=Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  if($('#kInc').checked){
+    S.extras.push({id,a,d,n:$('#aDesc').value.trim()});
+    if(!await save())return;
+    $('#aVal').value='';$('#aDesc').value='';
+    toast('Renda extra de '+fmt(a)+' salva');renderAdd();return;
+  }
+  S.expenses.push({id,a,c:document.querySelector('input[name=cat]:checked').value,p:document.querySelector('input[name=pay]:checked').value,d,n:$('#aDesc').value.trim()});
   if(!await save())return;
   $('#aVal').value='';$('#aDesc').value='';
   const st=stats(),g=S.goals;
@@ -532,19 +643,25 @@ function renderList(){
   const now=new Date(); if(!viewMonth)viewMonth={y:now.getFullYear(),m:now.getMonth()};
   const {y,m}=viewMonth,a=`${y}-${pad(m+1)}-01`,b=`${y}-${pad(m+1)}-${pad(dim(y,m))}`;
   $('#mLabel').textContent=MESES[m]+' de '+y;
-  const items=S.expenses.filter(e=>e.d>=a&&e.d<=b).sort((p,q)=>q.d.localeCompare(p.d)||q.id.localeCompare(p.id));
-  const tot=items.reduce((t,e)=>t+e.a,0);
-  $('#mTotal').textContent=items.length?`${items.length} gastos · ${fmt(tot)} (sem fixos)`:'';
-  if(!items.length){$('#listBox').innerHTML=`<div class="empty">Nenhum gasto neste mês.</div>`;return}
+  const exp=S.expenses.filter(e=>e.d>=a&&e.d<=b),ext=S.extras.filter(e=>e.d>=a&&e.d<=b).map(e=>Object.assign({inc:true},e));
+  const items=exp.concat(ext).sort((p,q)=>q.d.localeCompare(p.d)||q.id.localeCompare(p.id));
+  const tot=exp.reduce((t,e)=>t+e.a,0),totI=ext.reduce((t,e)=>t+e.a,0);
+  $('#mTotal').textContent=items.length?`Gastos ${fmt(tot)} (sem fixos)`+(totI?` · Renda extra ${fmt(totI)}`:''):'';
+  if(!items.length){$('#listBox').innerHTML=`<div class="empty">Nenhum lançamento neste mês.</div>`;return}
   const days={};for(const e of items)(days[e.d]=days[e.d]||[]).push(e);
   $('#listBox').innerHTML=`<div style="display:grid;gap:18px">`+Object.entries(days).map(([d,es])=>{
     const dt=new Date(d+'T12:00');
     const lab=dt.toLocaleDateString('pt-BR',{weekday:'short',day:'numeric',month:'short'});
-    return `<div class="day"><h4><span>${lab}</span><span class="num">${fmt(es.reduce((t,e)=>t+e.a,0))}</span></h4>`+
-      es.map(e=>`<div class="item"><div class="t"><b>${esc(e.n)||catName(e.c)}</b><small>${catName(e.c)}</small></div><span class="num">${fmt(e.a)}</span><button class="del" data-id="${e.id}" aria-label="Apagar gasto">Apagar</button></div>`).join('')+`</div>`;
+    const dayExp=es.reduce((t,e)=>e.inc?t:t+e.a,0);
+    return `<div class="day"><h4><span>${lab}</span><span class="num">${dayExp?fmt(dayExp):''}</span></h4>`+
+      es.map(e=>e.inc
+        ?`<div class="item"><div class="t"><b>${esc(e.n)||'Renda extra'}</b><small>Renda extra</small></div><span class="num plus">+ ${fmt(e.a)}</span><button class="del" data-id="${e.id}" data-inc="1" aria-label="Apagar renda">Apagar</button></div>`
+        :`<div class="item"><div class="t"><b>${esc(e.n)||catName(e.c)}</b><small>${catName(e.c)}<span class="tag">${payName(e.p)}</span></small></div><span class="num">${fmt(e.a)}</span><button class="del" data-id="${e.id}" aria-label="Apagar gasto">Apagar</button></div>`).join('')+`</div>`;
   }).join('')+`</div>`;
   $('#listBox').querySelectorAll('.del').forEach(btn=>arm(btn,'Confirmar',async()=>{
-    S.expenses=S.expenses.filter(e=>e.id!==btn.dataset.id); await save(); toast('Gasto apagado'); renderList();
+    if(btn.dataset.inc)S.extras=S.extras.filter(e=>e.id!==btn.dataset.id);
+    else S.expenses=S.expenses.filter(e=>e.id!==btn.dataset.id);
+    await save(); toast('Lançamento apagado'); renderList();
   }));
 }
 $('#mPrev').onclick=()=>{viewMonth.m--;if(viewMonth.m<0){viewMonth.m=11;viewMonth.y--}renderList()};
@@ -553,7 +670,10 @@ $('#mNext').onclick=()=>{viewMonth.m++;if(viewMonth.m>11){viewMonth.m=0;viewMont
 /* Metas */
 function renderGoals(){
   const g=S.goals;$('#gD').value=toInput(g.daily);$('#gW').value=toInput(g.weekly);$('#gM').value=toInput(g.monthly);$('#gY').value=toInput(g.yearly);
-  $('#fixedList').innerHTML=S.fixed.length?S.fixed.map((f,i)=>`<div class="fixedrow"><span>${esc(f.n)}</span><span class="num">${fmt(f.v)}</span><button class="del" data-i="${i}" aria-label="Remover ${esc(f.n)}">Remover</button></div>`).join('')+
+  $('#iM').value=toInput(S.income.monthly);
+  const st=stats();
+  $('#iExtra').textContent=st.extraMonth?`Renda extra lançada em ${MESES[st.m]}: ${fmt(st.extraMonth)} · total do mês ${fmt(st.income)}.`:'';
+  $('#fixedList').innerHTML=S.fixed.length?S.fixed.map((f,i)=>`<div class="fixedrow"><span>${esc(f.n)}${f.p?`<span class="tag">${payName(f.p)}</span>`:''}</span><span class="num">${fmt(f.v)}</span><button class="del" data-i="${i}" aria-label="Remover ${esc(f.n)}">Remover</button></div>`).join('')+
     `<div class="fixedrow"><b>Total</b><b class="num">${fmt(fixedTotal())}</b><span></span></div>`
     :`<span class="muted small">Nenhum custo fixo cadastrado.</span>`;
   $('#fixedList').querySelectorAll('.del').forEach(b=>arm(b,'Confirmar',async()=>{S.fixed.splice(+b.dataset.i,1);await save();renderGoals()}));
@@ -567,7 +687,12 @@ $('#fixedForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const n=$('#fxName').value.trim(),v=parseMoney($('#fxVal').value);
   if(!n||!v){toast('Preencha nome e valor do custo fixo');return}
-  S.fixed.push({n,v});await save();$('#fxName').value='';$('#fxVal').value='';renderGoals();
+  S.fixed.push({n,v,p:$('#fxPay').value});await save();$('#fxName').value='';$('#fxVal').value='';$('#fxPay').value='';renderGoals();
+});
+$('#incForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  S.income={monthly:parseMoney($('#iM').value)};
+  if(await save()){toast('Renda salva');renderGoals()}
 });
 
 /* Ajustes */
@@ -601,10 +726,13 @@ async function loadDemo(){
     const mm=new Date(y,m-k,1),yy=mm.getFullYear(),mi=mm.getMonth(),last=k===0?now.getDate():dim(yy,mi);
     for(let d=1;d<=last;d++){const qty=rnd()<.35?0:rnd()<.7?1:2;
       for(let q=0;q<qty;q++){const [c,vals]=pick[Math.floor(rnd()*pick.length)];
-        E.push({id:'x'+k+d+q+Math.floor(rnd()*1e4),a:vals[Math.floor(rnd()*vals.length)],c,d:`${yy}-${pad(mi+1)}-${pad(d)}`,n:desc[c]+' (exemplo)'})}}
+        E.push({id:'x'+k+d+q+Math.floor(rnd()*1e4),a:vals[Math.floor(rnd()*vals.length)],c,p:PAYS[Math.floor(rnd()*3)][0],d:`${yy}-${pad(mi+1)}-${pad(d)}`,n:desc[c]+' (exemplo)'})}}
   }
-  S={expenses:E,fixed:[{n:'Aluguel (exemplo)',v:180000},{n:'Internet e celular (exemplo)',v:15990},{n:'Streaming (exemplo)',v:5590},{n:'Energia (exemplo)',v:22000}],
-     goals:{daily:9000,weekly:50000,monthly:420000,yearly:5000000}};
+  const ym=`${y}-${pad(m+1)}`;
+  S={expenses:E,fixed:[{n:'Aluguel (exemplo)',v:180000,p:'pix'},{n:'Internet e celular (exemplo)',v:15990,p:'credito'},{n:'Streaming (exemplo)',v:5590,p:'credito'},{n:'Energia (exemplo)',v:22000,p:'debito'}],
+     goals:{daily:9000,weekly:50000,monthly:420000,yearly:5000000},
+     income:{monthly:450000},
+     extras:[{id:'r1',a:60000,d:`${ym}-${pad(Math.min(5,now.getDate()))}`,n:'Freela (exemplo)'}]};
   await save();toast('Dados de exemplo carregados');go('home');
 }
 
